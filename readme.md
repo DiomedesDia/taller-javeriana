@@ -5,13 +5,14 @@
 Facultad de Ingeniería — Departamento de Ingeniería de Sistemas  
 Arquitectura de Software (3384) — Período 2026-10
 
+Nombres de los Integrantes
 Harold Alejandro Vargas Martínez
 
 Juan Martin Trejos
 
-Wilson David Sanchez Prieto
-
 Juan Sebastian Forero Moreno
+
+Wilson David Sanchez Prieto
 
 ---
 
@@ -29,9 +30,9 @@ Juan Sebastian Forero Moreno
 
 ## Instrucciones de Instalación
 
-Para poder correr este proyecto se necesita tener Docker Desktop instalado y corriendo. Los puertos que se usaron son 8080, 5432 y 3307 deben estar disponibles en la máquina.
+Para correr el proyecto se necesita tener Docker Desktop instalado y corriendo. Los puertos 8080, 5432 y 3307 deben estar disponibles en la máquina.
 
-> **Nota:** Maven intentará compilar usando la versión de Java instalada por defecto. En este caso se usó Java 17 vía Homebrew (`brew install maven`). Si hay otra versión instalada (Java 21, 25, etc.), la compilación local puede fallar. Para evitar este problema, el Dockerfile ya compila internamente con Java 17, así que basta con usar Docker directamente.
+> **Nota:** Maven va a intentar compilar usando la versión de Java instalada por defecto. En este caso se usó Java 17 vía Homebrew (`brew install maven`). Si hay otra versión instalada (Java 21, 25, etc.), la compilación local puede fallar. Para evitar este problema, el Dockerfile ya compila internamente con Java 17, así que basta con usar Docker directamente.
 
 **Paso 1 — Descomprimir o clonar el proyecto:**
 ```bash
@@ -69,17 +70,17 @@ docker-compose down        # detiene sin borrar datos
 docker-compose down -v     # detiene y borra los datos de las bases de datos
 ```
 
-> Si el puerto 3306 ya está en uso por una instalación local de MySQL, el proyecto usa el 3307 externamente para evitar conflictos. La aplicación internamente sigue usando 3306 sin cambios.
+> Si el puerto 3306 llega a estar ocupado por uso por una instalación local de MySQL, el proyecto va a usar el puerto 3307 externamente para evitar conflictos. La aplicación internamente sigue usando 3306 sin cambios.
 
 ---
 
 ## Arquitectura Implementada
 
-El proyecto sigue una **arquitectura en capas**, que es un patrón que divide la aplicación en niveles horizontales donde cada uno tiene una responsabilidad específica. Esto hace que el código sea más fácil de mantener, entender y escalar porque cada capa solo se comunica con la que tiene debajo.
+El proyecto sigue una arquitectura en capas, que es un patrón que divide la aplicación en niveles horizontales donde cada uno tiene una responsabilidad específica. Esto hace que el código sea más fácil de mantener, entender y escalar porque cada capa solo se comunica con la que tiene debajo.
 
 Las capas del proyecto son:
 
-- **Presentación** (`static/`): el frontend en HTML, CSS y JavaScript que el usuario ve en el navegador
+- **Presentación** (`static/`): el frontend en HTML, CSS y JavaScript que el usuario ve en el navegador web.
 - **Controlador** (`controller/`): recibe las peticiones HTTP y las delega al servicio correspondiente
 - **Servicio** (`service/`): contiene toda la lógica de negocio, incluyendo el orquestador del patrón SAGA
 - **Repositorio** (`repository/`): se encarga de comunicarse con las bases de datos usando Spring Data JPA
@@ -154,7 +155,11 @@ src/main/java/co/edu/javeriana/transferencias/
 
 ### ¿Qué es el Patrón SAGA?
 
-SAGA es un patrón de diseño para gestionar transacciones distribuidas en sistemas que no pueden usar transacciones ACID tradicionales entre múltiples bases de datos o microservicios. Una SAGA es una secuencia de transacciones locales donde cada transacción actualiza su propia base de datos. Si algún paso falla, se ejecutan **transacciones compensatorias** para deshacer los cambios ya realizados, garantizando la consistencia eventual del sistema.
+Una saga consiste en una secuencia de transacciones locales. Cada transacción local de una saga actualiza la base de datos y desencadena la siguiente transacción local. Si se produce un error en una transacción, la saga ejecuta transacciones de compensación para revertir los cambios en la base de datos realizados por las transacciones anteriores.
+
+Esta secuencia de transacciones locales ayuda a lograr un flujo de trabajo empresarial al utilizar los principios de continuidad y compensación. El principio de continuación decide la recuperación anticipada del flujo de trabajo, mientras que el principio de compensación decide la recuperación hacia atrás. Si se produce un error en la actualización en algún paso de la transacción, la saga publica un evento para continuar (para volver a intentar la transacción) o como compensación (para volver al estado anterior de los datos). Esto garantiza que la integridad de los datos se mantenga y sea coherente en todos los almacenes de datos.
+
+Por ejemplo, cuando un usuario compra un libro en una tienda online, el proceso consiste en una secuencia de transacciones, como la creación de un pedido, la actualización del inventario, el pago y el envío, que representa un flujo de trabajo empresarial. Para completar este flujo de trabajo, la arquitectura distribuida emite una secuencia de transacciones locales para crear un pedido en la base de datos de pedidos, actualizar la base de datos de inventario y actualizar la base de datos de pagos. Cuando el proceso se realiza correctamente, estas transacciones se invocan secuencialmente para completar el flujo de trabajo empresarial, como se muestra en el siguiente diagrama. Sin embargo, si se produce un error en alguna de estas transacciones locales, el sistema debería poder decidir cuál es el siguiente paso adecuado, es decir, una recuperación hacia adelante o hacia atrás.
 
 ### Casos de Uso
 
@@ -242,9 +247,9 @@ Cada cambio de estado se persiste en una transacción independiente (`Propagatio
 **Datos:** BN-001 → BI-001, $100  
 **Resultado:** Estado `COMPLETADA`, saldos actualizados en ambas bases de datos
 
-![Transferencia exitosa](Escenario1.jpge)
+![Transferencia exitosa](Escenario1.jpeg)
 
-![Historial transferencia exitosa](Historial1.jpge)
+![Historial transferencia exitosa](Historia1.jpeg)
 
 ---
 
@@ -253,7 +258,7 @@ Cada cambio de estado se persiste en una transacción independiente (`Propagatio
 **Datos:** BN-003 → BI-001, $5.000 (BN-003 tiene saldo de $200)  
 **Resultado:** Estado `FALLIDA` — Falla en paso 1, sin cambios en saldos
 
-![Saldo insuficiente](Escenario2.jpge)
+![Saldo insuficiente](Escenario2.jpeg)
 
 ---
 
@@ -264,7 +269,7 @@ Cada cambio de estado se persiste en una transacción independiente (`Propagatio
 
 ![Fallo simulado revertida](Escenario3.jpge)
 
-![Historial revertida](Historial3.jpge)
+![Historial revertida](Historial3.jpeg)
 
 ---
 
@@ -273,22 +278,19 @@ Cada cambio de estado se persiste en una transacción independiente (`Propagatio
 **Datos:** 2 transferencias simultáneas desde diferentes cuentas en 2 pestañas  
 **Resultado:** Ambas procesadas correctamente — Los locks pesimistas previenen race conditions
 
-![Concurrencia dos pestañas](Escenario4.jpge)
+![Concurrencia dos pestañas](Escenario4.jpeg)
+
 
 ---
 
 ## Reflexión Final
 
-Este taller nops permitió confrontar uno de los desafíos más frecuentes en arquitecturas de software empresarial: mantener consistencia entre sistemas distribuidos con diferentes tecnologías de almacenamiento. La restricción de no poder usar transacciones XA/2PC entre PostgreSQL y MySQL no es una limitación artificial del enunciado, sino una realidad del mundo real que equipos de desarrollo enfrentan constantemente al integrar sistemas heterogéneos.
+Este taller nos permitió confrontar uno de los desafíos más frecuentes en arquitecturas de software empresarial: mantener consistencia entre sistemas distribuidos con diferentes tecnologías de almacenamiento. La restricción de no poder usar transacciones XA/2PC entre PostgreSQL y MySQL no es una limitación artificial del enunciado, sino una realidad del mundo real que equipos de desarrollo enfrentan constantemente al integrar sistemas heterogéneos.
 
-La implementación del patrón SAGA evidenció el concepto de **consistencia eventual**: el sistema no garantiza que todos los nodos estén sincronizados en el mismo instante, sino que eventualmente alcanzarán un estado consistente. Este paradigma representa un trade-off deliberado entre consistencia estricta y disponibilidad. En el contexto bancario, existe una ventana de tiempo —entre el débito y el crédito— donde el dinero no está en ninguna de las dos cuentas, lo cual requiere mecanismos de compensación robustos para manejar fallos en ese intervalo.
+La implementación del patrón SAGA evidenció el concepto de consistencia eventual: el sistema no garantiza que todos los nodos estén sincronizados en el mismo instante, sino que eventualmente alcanzarán un estado consistente. Este paradigma representa un trade-off deliberado entre consistencia estricta y disponibilidad. En el contexto bancario, existe una ventana de tiempo —entre el débito y el crédito— donde el dinero no está en ninguna de las dos cuentas, lo cual requiere mecanismos de compensación robustos para manejar fallos en ese intervalo.
 
 La diferencia entre SAGA Orquestado y Coreografiado resultó especialmente reveladora. El orquestador centraliza la lógica del flujo y simplifica el debugging, pero crea un acoplamiento con el servicio central. El coreografiado distribuye la responsabilidad entre los servicios mediante eventos, logrando mayor autonomía a costa de mayor complejidad para rastrear el flujo completo. La elección depende del contexto: equipos pequeños y flujos secuenciales favorecen la orquestación; arquitecturas de microservicios a escala favorecen la coreografía.
 
 Los locks pesimistas demostraron ser esenciales para garantizar la integridad en escenarios de concurrencia. Sin ellos, dos transferencias simultáneas desde la misma cuenta podrían ambas leer el mismo saldo disponible y proceder, generando un débito duplicado. Esta lección trasciende el patrón SAGA y aplica a cualquier sistema donde múltiples procesos compiten por los mismos recursos.
 
 En conclusión, este taller simuló con precisión problemas reales de arquitecturas de microservicios, integraciones B2B y sistemas cloud multi-región. Las lecciones sobre consistencia eventual, compensación de transacciones y gestión de estado distribuido son directamente aplicables a entornos de producción y constituyen fundamentos esenciales del arquitecto de software moderno.
-
----
-
-*Pontificia Universidad Javeriana — Arquitectura de Software (3384) — 2026-10*
