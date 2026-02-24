@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Don Banco S.A — Transferencias Internacionales</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+    <div class="header-inner">
+        <div class="header-brand">
+            <div class="brand-logo">BN</div>
+            <div class="brand-text">
+                <span class="brand-name">BancoNacional</span>
+                <span class="brand-sub">Banca Internacional</span>
+            </div>
+        </div>
+        <nav class="header-nav">
+            <span class="nav-item active">Transferencias</span>
+        </nav>
+        <div class="header-user">
+            <div class="user-avatar">DB</div>
+            <div class="user-info">
+                <span class="user-name">Don Banco.</span>
+            </div>
+        </div>
+    </div>
+</header>
+
+<!-- BANNER -->
+<div class="page-banner">
+    <div class="page-banner-inner">
+        <h1 class="page-title">Transferencias Internacionales</h1>
+        <p class="page-subtitle">Gestione transferencias entre el Banco Nacional y el Banco Internacional de forma segura y eficiente.</p>
+    </div>
+</div>
+
+<main class="main">
+
+    <!-- METRICAS -->
+    <section class="metrics-row">
+        <div class="metric-card">
+            <div class="metric-label">Total de operaciones</div>
+            <div class="metric-value" id="stat-total">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Completadas</div>
+            <div class="metric-value success" id="stat-completadas">0</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-label">Fallidas / Revertidas</div>
+            <div class="metric-value danger" id="stat-fallidas">0</div>
+        </div>
+        <div class="metric-card accent">
+            <div class="metric-label">Volumen total transferido</div>
+            <div class="metric-value" id="stat-monto">$0.00</div>
+        </div>
+    </section>
+
+    <div class="content-grid">
+
+        <!-- FORMULARIO -->
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Nueva Transferencia</h2>
+                <span class="panel-badge">SWIFT</span>
+            </div>
+            <div class="panel-body">
+
+                <div class="field-group">
+                    <label class="field-label">Cuenta Origen</label>
+                    <div class="field-sub">Banco Nacional — PostgreSQL</div>
+                    <select class="field-select" id="cuentaOrigen">
+                        <option value="">Seleccione cuenta de origen</option>
+                    </select>
+                </div>
+
+                <div class="transfer-arrow">
+                    <div class="arrow-line"></div>
+                    <div class="arrow-icon">TRANSFERIR</div>
+                    <div class="arrow-line"></div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Cuenta Destino</label>
+                    <div class="field-sub">Banco Internacional — MySQL</div>
+                    <select class="field-select" id="cuentaDestino">
+                        <option value="">Seleccione cuenta de destino</option>
+                    </select>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Monto (USD)</label>
+                    <div class="field-currency">
+                        <span class="currency-symbol">$</span>
+                        <input type="number" class="field-input currency-input" id="monto" placeholder="0.00" min="0.01" step="0.01">
+                    </div>
+                </div>
+
+                <div class="field-group">
+                    <label class="field-label">Concepto</label>
+                    <input type="text" class="field-input" id="descripcion" placeholder="Motivo de la transferencia">
+                </div>
+
+                <button class="btn-transfer" id="btnTransferir" onclick="app.realizarTransferencia()">
+                    Autorizar Transferencia
+                </button>
+
+                <div class="simulation-box">
+                    <div class="sim-info">
+                        <span class="sim-title">Modo de prueba</span>
+                        <span class="sim-desc">Activa fallo aleatorio del 25% en la acreditación</span>
+                    </div>
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="toggleFallo" onchange="app.toggleSimulacion()">
+                        <span class="toggle-track">
+                            <span class="toggle-thumb"></span>
+                        </span>
+                    </label>
+                </div>
+
+                <div id="alertSuccess" class="alert alert-success" style="display:none"></div>
+                <div id="alertError"   class="alert alert-error"   style="display:none"></div>
+                <div id="alertWarning" class="alert alert-warning" style="display:none"></div>
+            </div>
+        </section>
+
+        <!-- CUENTAS -->
+        <section class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Cuentas Disponibles</h2>
+                <button class="btn-refresh" onclick="app.cargarCuentas()">Actualizar</button>
+            </div>
+            <div class="panel-body">
+                <div class="bank-section">
+                    <div class="bank-label nacional">Banco Nacional — PostgreSQL</div>
+                    <div class="account-list" id="listaNacional">
+                        <div class="loading-row">Cargando cuentas...</div>
+                    </div>
+                </div>
+                <div class="bank-section">
+                    <div class="bank-label internacional">Banco Internacional — MySQL</div>
+                    <div class="account-list" id="listaInternacional">
+                        <div class="loading-row">Cargando cuentas...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HISTORIAL -->
+        <section class="panel full-width">
+            <div class="panel-header">
+                <h2 class="panel-title">Historial de Operaciones</h2>
+                <button class="btn-refresh" onclick="app.cargarHistorial()">Actualizar</button>
+            </div>
+            <div class="panel-body">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Referencia</th>
+                            <th>Origen</th>
+                            <th>Destino</th>
+                            <th>Monto</th>
+                            <th>Fecha</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historialBody">
+                        <tr><td colspan="6" class="empty-row">No hay operaciones registradas</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </div>
+</main>
+
+<footer class="footer">
+    <span>Don Banco S.A. — Sistema de Transferencias Internacionales</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>

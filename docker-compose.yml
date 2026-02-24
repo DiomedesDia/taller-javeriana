@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # Base de datos del Banco Nacional (PostgreSQL)
+  db-nacional:
+    image: postgres:15-alpine
+    container_name: banco_nacional_db
+    environment:
+      POSTGRES_DB: banco_nacional
+      POSTGRES_USER: admin_nacional
+      POSTGRES_PASSWORD: nacional123
+    ports:
+      - "5432:5432"
+    volumes:
+      - db-nacional-data:/var/lib/postgresql/data
+      - ./src/main/resources/schema-nacional.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./src/main/resources/data-nacional.sql:/docker-entrypoint-initdb.d/2-data.sql
+    networks:
+      - banco-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin_nacional -d banco_nacional"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Base de datos del Banco Internacional (MySQL)
+  db-internacional:
+    image: mysql:8.0
+    container_name: banco_internacional_db
+    environment:
+      MYSQL_DATABASE: banco_internacional
+      MYSQL_USER: admin_internacional
+      MYSQL_PASSWORD: internacional123
+      MYSQL_ROOT_PASSWORD: rootpass123
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-internacional-data:/var/lib/mysql
+      - ./src/main/resources/schema-internacional.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./src/main/resources/data-internacional.sql:/docker-entrypoint-initdb.d/2-data.sql
+    networks:
+      - banco-network
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uadmin_internacional", "-pinternacional123"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Aplicación Spring Boot
+  app:
+    build: .
+    container_name: transferencias_app
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - DB_NACIONAL_HOST=db-nacional
+      - DB_NACIONAL_PORT=5432
+      - DB_INTERNACIONAL_HOST=db-internacional
+      - DB_INTERNACIONAL_PORT=3306
+    depends_on:
+      db-nacional:
+        condition: service_healthy
+      db-internacional:
+        condition: service_healthy
+    networks:
+      - banco-network
+
+volumes:
+  db-nacional-data:
+  db-internacional-data:
+
+networks:
+  banco-network:
+    driver: bridge

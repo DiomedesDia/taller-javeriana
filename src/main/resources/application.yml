@@ -1,0 +1,65 @@
+spring:
+  application:
+    name: transferencias-distribuidas
+
+  # Configuración Banco Nacional (PostgreSQL)
+  datasource-nacional:
+    jdbc-url: jdbc:postgresql://${DB_NACIONAL_HOST:localhost}:${DB_NACIONAL_PORT:5432}/banco_nacional
+    username: admin_nacional
+    password: nacional123
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+    
+  # Configuración Banco Internacional (MySQL)
+  datasource-internacional:
+    jdbc-url: jdbc:mysql://${DB_INTERNACIONAL_HOST:localhost}:${DB_INTERNACIONAL_PORT:3306}/banco_internacional?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: admin_internacional
+    password: internacional123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    com.universidad.transferencias: DEBUG
+    org.springframework.transaction: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+# Perfil Docker
+---
+spring:
+  config:
+    activate:
+      on-profile: docker
+  jpa:
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+logging:
+  level:
+    com.universidad.transferencias: INFO
+    org.springframework.transaction: INFO
+    org.hibernate: WARN
